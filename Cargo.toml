@@ -1,0 +1,16 @@
+# Virtual workspace root for cargo git-dependency discovery.
+#
+# NOT FOR UPSTREAM — this file exists only so downstream consumers can
+# reference the Rust crates in this monorepo via a cargo `git = ...`
+# dependency without needing a non-standard `subdir` hint. The real
+# cargo workspace lives at `sherpa-onnx/rust/Cargo.toml`.
+#
+# When cherry-picking the CUDA support commit(s) onto a clean upstream
+# PR branch for `k2-fsa/sherpa-onnx`, exclude this commit. It should
+# never leave the local fork.
+[workspace]
+resolver = "2"
+members = [
+    "sherpa-onnx/rust/sherpa-onnx",
+    "sherpa-onnx/rust/sherpa-onnx-sys",
+]
