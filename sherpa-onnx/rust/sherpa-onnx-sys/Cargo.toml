@@ -24,6 +24,20 @@ default = ["static"]
 static = []
 shared = []
 
+# Link against a CUDA + cuDNN prebuilt of sherpa-onnx.
+#
+# Implies `shared` — the CUDA prebuilts on the k2-fsa releases page are
+# only published as shared libraries; there is no CUDA static archive.
+# Explicit combination `static + cuda` is rejected in build.rs with a
+# clear error so a downstream user can spot the misconfiguration early.
+#
+# Currently supports linux-x86_64 only. The CUDA archive is pinned to
+# CUDA 12.x + cuDNN 9.x; consumers are responsible for having those
+# runtime libraries installed on the target system — onnxruntime dlopens
+# `libcudnn.so.9`, `libcublas.so.12`, and related libraries at process
+# startup.
+cuda = ["shared"]
+
 [build-dependencies]
 bzip2 = "0.4"
 tar = "0.4"

@@ -80,6 +80,21 @@ fn try_main() -> Result<(), DynError> {
 fn resolve_link_mode() -> Result<LinkMode, DynError> {
     let static_enabled = env::var_os("CARGO_FEATURE_STATIC").is_some();
     let shared_enabled = env::var_os("CARGO_FEATURE_SHARED").is_some();
+    let cuda_enabled = env::var_os("CARGO_FEATURE_CUDA").is_some();
+
+    // Check cuda-specific conflicts first so downstream users get an
+    // actionable message. `cuda` implies `shared` via its feature
+    // declaration, so a `cuda + static` selection also triggers the
+    // generic `static + shared` conflict — this branch just surfaces
+    // the underlying cause (cuda) rather than the symptom.
+    if cuda_enabled && static_enabled {
+        return Err(
+            "Feature `cuda` requires shared linking; the k2-fsa CUDA prebuilt \
+             is only published as a shared library. Enable `shared` (or disable \
+             `static`) when using `cuda`."
+                .into(),
+        );
+    }
 
     if static_enabled && shared_enabled {
         return Err("Features `static` and `shared` cannot be enabled at the same time".into());
@@ -197,6 +212,24 @@ fn archive_name(
     target_arch: &str,
 ) -> Result<String, DynError> {
     let version = env!("CARGO_PKG_VERSION");
+
+    // CUDA-enabled builds use a different archive family. The CUDA prebuilt
+    // is shared-only and currently published for linux-x86_64 only. It is
+    // pinned to CUDA 12.x + cuDNN 9.x, which onnxruntime dlopens at runtime,
+    // so consumers must have the matching system libraries installed.
+    if env::var_os("CARGO_FEATURE_CUDA").is_some() {
+        return match (link_mode, target_os, target_arch) {
+            (LinkMode::Shared, "linux", "x86_64") => Ok(format!(
+                "sherpa-onnx-v{version}-cuda-12.x-cudnn-9.x-linux-x64-gpu.tar.bz2"
+            )),
+            _ => Err(format!(
+                "Feature `cuda` is only supported on linux-x86_64 with shared \
+                 linking. Got: link_mode={link_mode:?}, os={target_os}, arch={target_arch}"
+            )
+            .into()),
+        };
+    }
+
     let name = match (link_mode, target_os, target_arch) {
         (LinkMode::Static, "linux", "x86_64") => {
             format!("sherpa-onnx-v{version}-linux-x64-static-lib.tar.bz2")
