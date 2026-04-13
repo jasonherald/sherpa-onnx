@@ -24,6 +24,12 @@ default = ["static"]
 static = ["sherpa-onnx-sys/static"]
 shared = ["sherpa-onnx-sys/shared"]
 
+# Link against a CUDA + cuDNN prebuilt of sherpa-onnx. Implies `shared`
+# via the underlying `sherpa-onnx-sys/cuda` feature — CUDA prebuilts are
+# shared-only. Currently supports linux-x86_64 only. See the sys crate's
+# feature documentation for runtime requirements (CUDA 12.x + cuDNN 9.x).
+cuda = ["sherpa-onnx-sys/cuda"]
+
 [dependencies]
 sherpa-onnx-sys = { path = "../sherpa-onnx-sys", version = "1.12.36", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
